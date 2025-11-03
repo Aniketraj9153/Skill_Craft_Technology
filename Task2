@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Advanced Professional Stopwatch</title>
+
+<!-- ✅ Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+/* ===================== GLOBAL ===================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+body {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, #0f0f0f, #232323);
+    transition: 0.3s;
+    color: #fff;
+}
+
+body.light {
+    background: linear-gradient(135deg, #f0f0f0, #d1d1d1);
+    color: #000;
+}
+
+/* ===================== CONTAINER ===================== */
+.container {
+    width: 540px;
+    padding: 40px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(15px);
+    border-radius: 28px;
+    text-align: center;
+    box-shadow: 0px 0px 25px rgba(255,255,255,0.2);
+    animation: fadeIn 0.6s ease-in-out;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================== TIMER DISPLAY ===================== */
+#display {
+    font-size: 68px;
+    font-weight: 600;
+    margin: 25px 0;
+    letter-spacing: 1.8px;
+}
+
+/* ===================== BUTTONS SECTION ===================== */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 25px;
+}
+
+button {
+    padding: 12px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.25s ease;
+    font-weight: 600;
+}
+
+button:hover {
+    transform: scale(1.06);
+}
+
+#start { background: #27ae60; color: white; }
+#pause { background: #f39c12; color: white; }
+#reset { background: #c0392b; color: white; }
+#lap { background: #3498db; color: white; }
+#export { background: #8e44ad; color: white; }
+#theme { background: #555; color: white; grid-column: span 3; }
+
+/* ===================== LAP LIST ===================== */
+.laps {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.lap-item {
+    background: rgba(255,255,255,0.17);
+    margin: 6px 0;
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+}
+body.light .lap-item {
+    background: rgba(0,0,0,0.17);
+}
+
+/* Custom scroll bar */
+.laps::-webkit-scrollbar { width: 8px; }
+.laps::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.5);
+    border-radius: 10px;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+    <h1>⏱ Premium Stopwatch</h1>
+    <p>Start · Pause · Reset · Lap · Export CSV</p>
+
+    <!-- DISPLAY TIMER -->
+    <div id="display">00:00:00.000</div>
+
+    <!-- STOPWATCH BUTTONS -->
+    <div class="buttons">
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="lap">Lap</button>
+        <button id="reset">Reset</button>
+        <button id="export">Export CSV</button>
+        <button id="theme">Toggle Light / Dark</button>
+    </div>
+
+    <!-- LAP LIST -->
+    <div class="laps" id="laps"></div>
+
+</div>
+
+<script>
+/* ===========================================================
+    STOPWATCH LOGIC
+=========================================================== */
+let startTime = 0, elapsedTime = 0, isRunning = false, lapCount = 1;
+
+const display = document.getElementById("display");
+const laps = document.getElementById("laps");
+
+/* Format stopwatch time */
+function formatTime(time) {
+    const ms = Math.floor(time % 1000);
+    const sec = Math.floor((time / 1000) % 60);
+    const min = Math.floor((time / 60000) % 60);
+    const hr = Math.floor(time / 3600000);
+
+    return `${String(hr).padStart(2,"0")} : ${String(min).padStart(2,"0")} : ${String(sec).padStart(2,"0")} . ${String(ms).padStart(3,"0")}`;
+}
+
+/* Update display continuously */
+function updateDisplay() {
+    if (isRunning) {
+        const currentTime = performance.now() - startTime + elapsedTime;
+        display.innerText = formatTime(currentTime);
+    }
+    requestAnimationFrame(updateDisplay);
+}
+updateDisplay();
+
+/* Start Stopwatch */
+document.getElementById("start").onclick = () => {
+    if (!isRunning) {
+        isRunning = true;
+        startTime = performance.now();
+    }
+};
+
+/* Pause Stopwatch */
+document.getElementById("pause").onclick = () => {
+    if (isRunning) {
+        isRunning = false;
+        elapsedTime += performance.now() - startTime;
+    }
+};
+
+/* Reset Stopwatch */
+document.getElementById("reset").onclick = () => {
+    isRunning = false;
+    elapsedTime = 0;
+    lapCount = 1;
+    laps.innerHTML = "";
+    display.innerText = "00:00:00.000";
+};
+
+/* Record Lap Time */
+document.getElementById("lap").onclick = () => {
+    if (!isRunning) return;
+
+    const lapItem = document.createElement("div");
+    lapItem.classList.add("lap-item");
+    lapItem.innerHTML = `<span>Lap ${lapCount++}</span> <span>${display.innerText}</span>`;
+    laps.appendChild(lapItem);
+};
+
+/* Export lap times to CSV */
+document.getElementById("export").onclick = () => {
+    let csv = "Lap,Time\n";
+    document.querySelectorAll(".lap-item").forEach((lap, i) => {
+        csv += `${i + 1},${lap.children[1].innerText}\n`;
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    a.download = "stopwatch_laps.csv";
+    a.click();
+};
+
+/* Theme toggle (Light/Dark Mode) */
+document.getElementById("theme").onclick = () => {
+    document.body.classList.toggle("light");
+};
+
+/* Keyboard shortcuts */
+document.addEventListener("keydown", (e) => {
+    if (e.code === "Space") document.getElementById("start").click();
+    if (e.code === "KeyR") document.getElementById("reset").click();
+    if (e.code === "KeyL") document.getElementById("lap").click();
+});
+</script>
+
+</body>
+</html>
